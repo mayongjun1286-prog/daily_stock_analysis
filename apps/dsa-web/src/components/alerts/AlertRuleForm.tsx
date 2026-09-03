@@ -131,7 +131,7 @@ export const AlertRuleForm: React.FC<AlertRuleFormProps> = ({ onSubmit, isSubmit
   const [targetScope, setTargetScope] = useState<AlertTargetScope>('single_symbol');
   const [target, setTarget] = useState('');
   const [portfolioTarget, setPortfolioTarget] = useState('all');
-  const [marketRegion, setMarketRegion] = useState<MarketRegion>('cn');
+  const [marketRegion, setMarketRegion] = useState<MarketRegion>('us');
   const [accounts, setAccounts] = useState<PortfolioAccountItem[]>([]);
   const [accountsError, setAccountsError] = useState<string | null>(null);
   const [alertType, setAlertType] = useState<AlertType>('price_cross');
@@ -363,7 +363,7 @@ export const AlertRuleForm: React.FC<AlertRuleFormProps> = ({ onSubmit, isSubmit
     setTargetScope(nextScope);
     setAlertType(nextType);
     setPortfolioTarget('all');
-    setMarketRegion('cn');
+    setMarketRegion('us');
     resetParameters(nextType);
     setFormError(null);
   };
@@ -403,7 +403,7 @@ export const AlertRuleForm: React.FC<AlertRuleFormProps> = ({ onSubmit, isSubmit
     setName('');
     setTarget('');
     setPortfolioTarget('all');
-    setMarketRegion('cn');
+    setMarketRegion('us');
     setPrice('');
     setChangePct('');
     setMultiplier('');
@@ -428,7 +428,7 @@ export const AlertRuleForm: React.FC<AlertRuleFormProps> = ({ onSubmit, isSubmit
           label={text.targetCode}
           value={target}
           onChange={(event) => setTarget(event.target.value)}
-          placeholder="600519 / AAPL / hk00700"
+          placeholder="AAPL / TSLA / 7203.T"
           disabled={isSubmitting}
         />
       );

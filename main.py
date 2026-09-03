@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """
 ===================================
-A股自选股智能分析系统 - 主调度程序
+多市场自选股智能分析系统（已移除中国股票）- 主调度程序
 ===================================
 
 职责：
@@ -277,14 +277,14 @@ def _reload_env_file_values_preserving_overrides() -> None:
 def parse_arguments() -> argparse.Namespace:
     """解析命令行参数"""
     parser = argparse.ArgumentParser(
-        description='A股自选股智能分析系统',
+        description='多市场自选股智能分析系统（已移除中国股票）',
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog='''
 示例:
   python main.py                    # 正常运行
   python main.py --debug            # 调试模式
   python main.py --dry-run          # 仅获取数据，不进行 AI 分析
-  python main.py --stocks 600519,000001  # 指定分析特定股票
+  python main.py --stocks AAPL,TSLA      # 指定分析特定股票
   python main.py --stocks sh000016,000300.CSI,930955.CSI  # 指定分析已登记指数（sh/sz 前缀或 .CSI alias）
   python main.py --portfolio futu   # 使用 Futu 真实正股持仓（覆盖 --stocks）
   python main.py --no-notify        # 不发送推送通知
@@ -1477,7 +1477,7 @@ def main() -> int:
         return 1
 
     logger.info("=" * 60)
-    logger.info("A股自选股智能分析系统 启动")
+    logger.info("多市场自选股智能分析系统（已移除中国股票）启动")
     logger.info(f"运行时间: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
     logger.info("=" * 60)
 

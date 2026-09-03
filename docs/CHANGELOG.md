@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 > For user-friendly release highlights, see the [GitHub Releases](https://github.com/ZhuLinsen/daily_stock_analysis/releases) page.
 
 ## [Unreleased]
+- [修复] 移除中国股票相关入口：分析目标解析对 A 股/港股/沪深/CSI 目标统一返回 unsupported，`/api/v1/stocks/*` 与自选/导入结果过滤中国市场代码，大盘复盘市场默认与可选区域收敛为 us/jp/kr。
 - [修复] 将 litellm 依赖窗口上界收敛到 `<1.99.0`：1.99.0 起把 `prompt_cache_key` 透传给 OpenAI provider，破坏 provider 缓存测试对不透传行为的既有断言（CI backend-tests 3/3 与 backend-gate 失败）；保留历史最低版本与 `!=1.82.7`/`!=1.82.8` 事故排除，同时同步更新各 LLM 兼容文档中写死的依赖约束表述，避免文档与 requirements.txt 漂移
 
 - [新功能] 新增 `SEARXNG_TIMEOUT_SECONDS` 配置自建 SearXNG 单次搜索超时（默认 10 秒），已接线全部 SearchService 构造入口（含题材搜索子进程重建）与默认 GitHub Actions 工作流

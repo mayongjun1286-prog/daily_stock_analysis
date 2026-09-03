@@ -1204,8 +1204,8 @@ class Config:
     run_immediately: bool = True              # 启动时是否立即执行一次（非定时模式）
     market_review_enabled: bool = True        # 是否启用大盘复盘
     daily_market_context_enabled: bool = True   # 是否将大盘环境摘要用于个股分析 Prompt 与保守护栏
-    # 大盘复盘市场区域：cn(A股)、hk(港股)、us(美股)、jp(日股)、kr(韩股)、both(全部市场)
-    market_review_region: str = "cn"
+    # 大盘复盘市场区域：us(美股)、jp(日股)、kr(韩股)、both(全部市场)
+    market_review_region: str = "us"
     market_review_color_scheme: str = "green_up"
     # 交易日检查：默认启用，非交易日跳过执行；设为 false 或 --force-run 可强制执行（Issue #373）
     trading_day_check_enabled: bool = True
@@ -1254,7 +1254,7 @@ class Config:
     portfolio_fx_update_enabled: bool = True
 
     # Discord 机器人状态
-    discord_bot_status: str = "A股智能分析 | /help"
+    discord_bot_status: str = "Stock Analysis | /help"
 
     # === 流控配置（防封禁关键参数）===
     # Akshare 请求间隔范围（秒）
@@ -2185,7 +2185,7 @@ class Config:
             market_review_enabled=os.getenv('MARKET_REVIEW_ENABLED', 'true').lower() == 'true',
             daily_market_context_enabled=os.getenv('DAILY_MARKET_CONTEXT_ENABLED', 'true').lower() == 'true',
             market_review_region=cls._parse_market_review_region(
-                os.getenv('MARKET_REVIEW_REGION', 'cn')
+                os.getenv('MARKET_REVIEW_REGION', 'us')
             ),
             market_review_color_scheme=cls._parse_market_review_color_scheme(
                 os.getenv('MARKET_REVIEW_COLOR_SCHEME', 'green_up')
@@ -2216,7 +2216,7 @@ class Config:
             # Telegram
             telegram_webhook_secret=os.getenv('TELEGRAM_WEBHOOK_SECRET'),
             # Discord 机器人扩展配置
-            discord_bot_status=os.getenv('DISCORD_BOT_STATUS', 'A股智能分析 | /help'),
+            discord_bot_status=os.getenv('DISCORD_BOT_STATUS', 'Stock Analysis | /help'),
             # 实时行情增强数据配置
             enable_realtime_quote=os.getenv('ENABLE_REALTIME_QUOTE', 'true').lower() == 'true',
             enable_realtime_technical_indicators=os.getenv(
@@ -2909,15 +2909,15 @@ class Config:
 
     @classmethod
     def _parse_market_review_region(cls, value: str) -> str:
-        """解析大盘复盘市场区域，非法值记录警告后回退为 cn"""
+        """解析大盘复盘市场区域，非法值记录警告后回退为 us"""
         normalized = normalize_market_review_region_lenient(value)
         if normalized is not None:
             return normalized
 
         logging.getLogger(__name__).warning(
-            f"MARKET_REVIEW_REGION 配置值 '{value}' 无效，已回退为默认值 'cn'（合法值：cn / hk / us / jp / kr / both；支持逗号分隔有效值）"
+            f"MARKET_REVIEW_REGION 配置值 '{value}' 无效，已回退为默认值 'us'（合法值：us / jp / kr / both；支持逗号分隔有效值）"
         )
-        return 'cn'
+        return 'us'
 
     @classmethod
     def _parse_market_review_color_scheme(cls, value: str) -> str:

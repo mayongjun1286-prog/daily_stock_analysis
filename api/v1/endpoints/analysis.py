@@ -317,6 +317,11 @@ def _resolve_analysis_input(raw_value: str):
 
     resolved = resolve_name_to_code(text)
     if resolved:
+        resolved_target = parse_analysis_target(resolved)
+        if resolved_target.asset_type == ParseStatus.UNSUPPORTED:
+            return (resolved, resolved_target)
+        if resolved_target.asset_type == ParseStatus.INDEX:
+            return (resolved_target.canonical_id, resolved_target)
         return (canonical_stock_code(resolved), None)
 
     raise _invalid_analysis_input_error()
@@ -673,7 +678,7 @@ def trigger_market_review(
 
     runtime_config = _with_request_report_language(config, request.report_language)
     effective_region = request.region or (
-        normalize_market_review_region_lenient(runtime_config.market_review_region) or "cn"
+        normalize_market_review_region_lenient(runtime_config.market_review_region) or "us"
     )
 
     lock_token = _try_acquire_market_review_lock(runtime_config)

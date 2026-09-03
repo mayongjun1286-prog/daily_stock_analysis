@@ -172,6 +172,8 @@ _KNOWN_PREFIXES_SORTED = tuple(
 # ``us``-prefixed tokens must use a valid uppercase US ticker base — see
 # the guard in ``parse_analysis_target`` for the full rationale.
 _US_TICKER_SHAPE_RE = re.compile(r"^[A-Z]{1,5}(\.[A-Z]{1,2})?$")
+_CHINA_EXCHANGES = frozenset({"CN", "SH", "SZ", "SS", "BJ", "HK", "CSI"})
+_CHINA_PREFIXES = ("sh", "sz", "ss", "bj", "hk", "csi")
 
 
 def _split_prefix(token: str) -> Tuple[Optional[str], str]:
@@ -571,6 +573,48 @@ def _canonicalize_for_stock(
     return canonical, display
 
 
+def _is_china_market_target(
+    *,
+    prefix: Optional[str],
+    exchange: str,
+    canonical_id: str,
+    display_code: str,
+) -> bool:
+    exchange_upper = (exchange or "").strip().upper()
+    if exchange_upper in _CHINA_EXCHANGES:
+        return True
+    prefix_lower = (prefix or "").strip().lower()
+    if prefix_lower in _CHINA_PREFIXES:
+        return True
+    canonical_lower = (canonical_id or "").strip().lower()
+    display_upper = (display_code or "").strip().upper()
+    return (
+        canonical_lower.startswith(_CHINA_PREFIXES)
+        or display_upper.endswith((".SH", ".SZ", ".SS", ".BJ", ".HK", ".CSI"))
+    )
+
+
+def _china_market_unsupported_target(
+    *,
+    raw_input: str,
+    canonical_id: str,
+    display_code: str,
+    exchange: str,
+    normalized_prefix: Optional[str],
+    normalized_code: str,
+) -> AnalysisTarget:
+    return AnalysisTarget(
+        raw_input=raw_input,
+        asset_type=ParseStatus.UNSUPPORTED,
+        canonical_id=canonical_id,
+        display_code=display_code,
+        exchange=exchange or "UNKNOWN",
+        unsupported_reason="china-market targets have been removed",
+        normalized_prefix=normalized_prefix,
+        normalized_code=normalized_code,
+    )
+
+
 # ---------------------------------------------------------------------------
 # Public entry point.
 # ---------------------------------------------------------------------------
@@ -641,6 +685,20 @@ def parse_analysis_target(
                 norm_prefix = p
                 norm_code = raw[len(p):]
                 break
+        if _is_china_market_target(
+            prefix=norm_prefix,
+            exchange=exchange,
+            canonical_id=canonical,
+            display_code=display,
+        ):
+            return _china_market_unsupported_target(
+                raw_input=raw_input,
+                canonical_id=canonical,
+                display_code=display,
+                exchange=exchange,
+                normalized_prefix=norm_prefix,
+                normalized_code=norm_code,
+            )
         return AnalysisTarget(
             raw_input=raw_input,
             asset_type=ParseStatus.INDEX,
@@ -749,6 +807,20 @@ def parse_analysis_target(
     # because the body isn't pure digits. We therefore short-circuit foreign
     # suffix forms and emit the canonical Yahoo-style ``BASE.SUFFIX`` id.
     if norm_code and "." in norm_code and norm_exchange:
+        if _is_china_market_target(
+            prefix=None,
+            exchange=norm_exchange,
+            canonical_id=norm_code,
+            display_code=norm_code,
+        ):
+            return _china_market_unsupported_target(
+                raw_input=raw_input,
+                canonical_id=norm_code,
+                display_code=norm_code,
+                exchange=norm_exchange,
+                normalized_prefix=None,
+                normalized_code=norm_code,
+            )
         return AnalysisTarget(
             raw_input=raw_input,
             asset_type=ParseStatus.STOCK,
@@ -1025,6 +1097,20 @@ def parse_analysis_target(
         if prefix in _EXCHANGE_PREFIX_TO_CODE:
             exchange_for_stock = _EXCHANGE_PREFIX_TO_CODE[prefix]
         canonical, display = _canonicalize_for_stock(prefix, bare, exchange_for_stock)
+        if _is_china_market_target(
+            prefix=prefix,
+            exchange=exchange_for_stock,
+            canonical_id=canonical,
+            display_code=display,
+        ):
+            return _china_market_unsupported_target(
+                raw_input=raw_input,
+                canonical_id=canonical,
+                display_code=display,
+                exchange=exchange_for_stock,
+                normalized_prefix=prefix,
+                normalized_code=bare,
+            )
         return AnalysisTarget(
             raw_input=raw_input,
             asset_type=ParseStatus.STOCK,
@@ -1055,6 +1141,20 @@ def parse_analysis_target(
         )
 
     canonical, display = _canonicalize_for_stock(prefix, bare, exchange)
+    if _is_china_market_target(
+        prefix=prefix,
+        exchange=exchange,
+        canonical_id=canonical,
+        display_code=display,
+    ):
+        return _china_market_unsupported_target(
+            raw_input=raw_input,
+            canonical_id=canonical,
+            display_code=display,
+            exchange=exchange,
+            normalized_prefix=prefix,
+            normalized_code=bare,
+        )
 
     # Surface potential index conflict (e.g. user typed ``000300`` expecting
     # the index but got a stock because the contract defaults bare codes to

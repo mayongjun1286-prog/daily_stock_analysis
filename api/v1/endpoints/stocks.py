@@ -42,7 +42,7 @@ from src.services.import_parser import (
 from src.services.stock_service import StockService
 from src.services.stock_profile_service import InvalidStockProfileCode, StockProfileService
 from src.services.run_diagnostics import sanitize_diagnostic_text
-from src.services.stock_list_parser import split_stock_list
+from src.services.stock_list_parser import ParseStatus, parse_analysis_target, split_stock_list
 from src.services.system_config_service import SystemConfigService
 from data_provider.base import normalize_stock_code
 
@@ -79,19 +79,21 @@ def _write_watchlist_codes(service: SystemConfigService, codes: list) -> None:
 
 # Stock code validation patterns (aligned with frontend validateStockCode)
 _STOCK_CODE_RE = re.compile(
-    r"^(?:\d{6}"                              # A-share 6-digit
-    r"|(?:SH|SZ|BJ)\d{6}"                     # exchange-prefixed A-share
-    r"|\d{6}\.(?:SH|SZ|SS|BJ)"                # exchange-suffixed A-share
-    r"|\d{1,5}\.HK"                           # HK suffix format
-    r"|HK\d{1,5}"                             # HK prefix format
-    r"|\d{5}"                                 # bare 5-digit HK code
-    r"|\d{4,5}\.T"                            # Japan Yahoo suffix format
+    r"^(?:\d{4,5}\.T"                         # Japan Yahoo suffix format
     r"|\d{6}\.(?:KS|KQ)"                     # Korea Yahoo suffix format
     r"|\d{4,6}\.(?:TW|TWO)"                  # Taiwan Yahoo suffix format
     r"|[A-Z]{1,5}(?:\.(?:US|[A-Z]))?"         # US ticker
     r")$",
     re.IGNORECASE,
 )
+
+
+def _is_removed_china_target(code: str) -> bool:
+    target = parse_analysis_target(code)
+    return (
+        target.asset_type == ParseStatus.UNSUPPORTED
+        and (target.unsupported_reason or "") == "china-market targets have been removed"
+    )
 
 
 def _validate_and_normalize_stock_code(code: str) -> str:
@@ -111,6 +113,14 @@ def _validate_and_normalize_stock_code(code: str) -> str:
             detail={
                 "error": "invalid_stock_code",
                 "message": f"'{stripped}' 不是合法的股票代码格式",
+            },
+        )
+    if _is_removed_china_target(stripped):
+        raise HTTPException(
+            status_code=400,
+            detail={
+                "error": "unsupported_market",
+                "message": "中国股票相关功能已移除，请使用非中国市场代码",
             },
         )
     return normalize_stock_code(stripped)
@@ -183,7 +193,9 @@ def extract_from_image(
     try:
         items, raw_text = extract_stock_codes_from_image(data, content_type)
         extract_items = [
-            ExtractItem(code=code, name=name, confidence=conf) for code, name, conf in items
+            ExtractItem(code=code, name=name, confidence=conf)
+            for code, name, conf in items
+            if not _is_removed_china_target(code)
         ]
         codes = [i.code for i in extract_items]
         return ExtractFromImageResponse(
@@ -314,6 +326,7 @@ async def parse_import(request: Request) -> ExtractFromImageResponse:
     extract_items = [
         ExtractItem(code=code, name=name, confidence=conf)
         for code, name, conf in items
+        if not _is_removed_china_target(code)
     ]
     codes = list(dict.fromkeys(i.code for i in extract_items if i.code))
     return ExtractFromImageResponse(codes=codes, items=extract_items, raw_text=None)
@@ -333,7 +346,7 @@ def get_watchlist(
     service: SystemConfigService = Depends(get_system_config_service),
 ) -> WatchlistResponse:
     try:
-        codes = _read_watchlist_codes(service)
+        codes = [code for code in _read_watchlist_codes(service) if not _is_removed_china_target(code)]
         return WatchlistResponse(stock_codes=codes, message=f"当前自选 {len(codes)} 只股票")
     except Exception as e:
         logger.error(f"获取自选队列失败: {e}", exc_info=True)
@@ -463,7 +476,7 @@ def get_stock_quote(stock_code: str) -> StockQuote:
     获取指定股票的最新行情数据
     
     Args:
-        stock_code: 股票代码（如 600519、00700、AAPL）
+        stock_code: 股票代码（如 AAPL、7203.T、005930.KS）
         
     Returns:
         StockQuote: 实时行情数据
