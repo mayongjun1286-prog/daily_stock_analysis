@@ -1,9 +1,10 @@
 name: 每日股票分析
 
 on:
-  # 定时触发 - 每天北京时间 18:00 (UTC 10:00)
+  # 定时触发 - 美股收盘后，加州时间 15:00 PDT / 14:00 PST (UTC 22:00)
+  # GitHub Actions cron 仅支持 UTC，不随夏令时自动调整
   schedule:
-    - cron: '0 10 * * 1-5'     # 周一到周五，UTC 10:00 = 北京时间 18:00
+    - cron: '0 22 * * 1-5'     # 周一到周五，UTC 22:00 = 加州 15:00 (PDT) / 14:00 (PST)
   
   # 手动触发
   workflow_dispatch:
@@ -454,7 +455,7 @@ jobs:
           echo "=========================================="
           echo "🚀 A股自选股智能分析系统"
           echo "=========================================="
-          echo "⏰ 时间: $(TZ='Asia/Shanghai' date '+%Y-%m-%d %H:%M:%S')"
+          echo "⏰ 时间: $(TZ='America/Los_Angeles' date '+%Y-%m-%d %H:%M:%S')"
           echo "🎯 运行模式: $MODE"
           echo "📊 自选股: $STOCK_LIST"
           echo "📝 报告类型: $REPORT_TYPE"
