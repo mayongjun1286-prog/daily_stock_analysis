@@ -1,7 +1,8 @@
 name: 每日股票分析
 
 on:
-  # 定时触发（GitHub Actions cron 仅支持固定 UTC；以下两条 cron 按加州夏令时 PDT 设定，冬令时 PST 会提前 1 小时）
+  # 定时触发（GitHub Actions cron 仅支持固定 UTC；以下两条 cron 仅在加州夏令时 PDT 对应 06:00 / 14:30，
+  # 冬令时 PST 会分别提前到 05:00 / 13:30）
   schedule:
     # 美股盘前个股分析：加州 06:00 PDT / 05:00 PST（UTC 13:00），开盘 06:30 PT 前完成
     - cron: '0 13 * * 1-5'
