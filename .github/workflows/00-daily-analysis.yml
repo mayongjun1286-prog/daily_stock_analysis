@@ -1,9 +1,13 @@
 name: 每日股票分析
 
 on:
-  # 定时触发 - 每天北京时间 18:00 (UTC 10:00)
+  # 定时触发（GitHub Actions cron 仅支持固定 UTC；以下两条 cron 仅在加州夏令时 PDT 对应 06:00 / 14:30，
+  # 冬令时 PST 会分别提前到 05:00 / 13:30）
   schedule:
-    - cron: '0 10 * * 1-5'     # 周一到周五，UTC 10:00 = 北京时间 18:00
+    # 美股盘前个股分析：加州 06:00 PDT / 05:00 PST（UTC 13:00），开盘 06:30 PT 前完成
+    - cron: '0 13 * * 1-5'
+    # 美股大盘复盘：加州 14:30 PDT / 13:30 PST（UTC 21:30），收盘 13:00 PT 之后
+    - cron: '30 21 * * 1-5'
   
   # 手动触发
   workflow_dispatch:
@@ -449,12 +453,20 @@ jobs:
           fi
 
           # 判断运行模式
-          MODE="${{ github.event.inputs.mode || 'full' }}"
+          if [ "${{ github.event_name }}" = "schedule" ]; then
+            case "${{ github.event.schedule }}" in
+              "0 13 * * 1-5")  MODE="stocks-only" ;;
+              "30 21 * * 1-5") MODE="market-only" ;;
+              *)               MODE="full" ;;
+            esac
+          else
+            MODE="${{ github.event.inputs.mode || 'full' }}"
+          fi
           
           echo "=========================================="
           echo "🚀 A股自选股智能分析系统"
           echo "=========================================="
-          echo "⏰ 时间: $(TZ='Asia/Shanghai' date '+%Y-%m-%d %H:%M:%S')"
+          echo "⏰ 时间: $(TZ='America/Los_Angeles' date '+%Y-%m-%d %H:%M:%S %Z')"
           echo "🎯 运行模式: $MODE"
           echo "📊 自选股: $STOCK_LIST"
           echo "📝 报告类型: $REPORT_TYPE"
